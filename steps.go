@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -16,8 +17,11 @@ type Steps struct {
 }
 
 type Step struct {
-	command string
-	counter int
+	command   string
+	counter   int
+	duration  time.Duration
+	state     State
+	startedAt time.Time
 }
 
 type tickMsg struct {
@@ -26,6 +30,23 @@ type tickMsg struct {
 type startMsg struct {
 	id int
 }
+
+type exitMsg struct {
+	id       int
+	duration time.Duration
+	state    State
+	output   string
+}
+
+type State string
+
+const (
+	Pending State = "🔜"
+	Started State = "🟡"
+	Exited0 State = "🟢"
+	Exited1 State = "❌"
+	Skipped State = "🙈"
+)
 
 func tick(immediately ...bool) tea.Cmd {
 	if len(immediately) > 0 {
@@ -38,32 +59,59 @@ func tick(immediately ...bool) tea.Cmd {
 	})
 }
 
-func (m Steps) start(index int) tea.Cmd {
-	return func() tea.Msg {
-		return startMsg{id: index}
+func newStep(command string) Step {
+	return Step{
+		command: command,
+		state:   Pending,
+	}
+}
+
+func (m Steps) start(index int) (Steps, tea.Cmd) {
+	m.steps[index].state = Started
+	m.steps[index].startedAt = time.Now()
+	return m, func() tea.Msg {
+		command := strings.Split(m.steps[index].command, " ")
+		cmd := exec.Command(command[0], command[1:]...) //nolint:gosec
+		output, err := cmd.Output()
+		m.steps[index].duration = time.Since(m.steps[index].startedAt).Round(time.Millisecond)
+
+		if err != nil {
+			m.steps[index].state = Exited1
+		} else {
+			m.steps[index].state = Exited0
+		}
+
+		return exitMsg{
+			id:       index,
+			state:    m.steps[index].state,
+			output:   string(output),
+			duration: m.steps[index].duration,
+		}
 	}
 }
 
 func (m Steps) Init() tea.Cmd {
-	return m.start(0)
+	return func() tea.Msg {
+		return startMsg{id: 0}
+	}
 }
 
 func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tickMsg:
-		// log.Println("update currentstep", m.currentStep)
-		m.steps[m.currentStep].counter++
-		return m, tick()
+		if m.steps[m.currentStep].state == Started {
+			m.steps[m.currentStep].duration = time.Since(m.steps[m.currentStep].startedAt).Round(time.Millisecond)
+			return m, tick()
+		}
 	case startMsg:
-		m.currentStep = msg.id
-		return m, tick()
+		m, cmd := m.start(msg.id)
+		return m, tea.Batch(tick(), cmd)
 	}
 	return m, nil
 }
 
 func (m Steps) ViewOne(index int) string {
 	var (
-		icon  string
 		space string
 	)
 	step := m.steps[index]
@@ -73,13 +121,8 @@ func (m Steps) ViewOne(index int) string {
 		Border(lipgloss.RoundedBorder()).
 		Foreground(lipgloss.Color("#666")).BorderForeground(lipgloss.Color("#aaa"))
 
-	if index == m.currentStep {
-		icon = "🟡"
-	} else {
-		icon = "🔜"
-	}
-	content := fmt.Sprintf("%s %s", icon, step.command)
-	lastly := fmt.Sprintf("%d", step.counter)
+	content := fmt.Sprintf("%s %s", step.state, step.command)
+	lastly := step.duration.Round(time.Millisecond).String()
 
 	if m.viewportWidth > 0 {
 		space = strings.Repeat(" ", m.viewportWidth-lipgloss.Width(content)-lipgloss.Width(lastly)-6)

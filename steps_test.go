@@ -9,7 +9,7 @@ import (
 
 func TestInitReturnsStart(t *testing.T) {
 	s := Steps{steps: []Step{
-		{command: "first command"},
+		newStep("first command"),
 	}}
 	cmd := s.Init()
 	start := cmd()
@@ -21,22 +21,30 @@ func TestInitReturnsStart(t *testing.T) {
 func TestUpdateStartMsg(t *testing.T) {
 	var cmd tea.Cmd
 	s := Steps{steps: []Step{
-		{command: "first command"},
-		{command: "second command"},
+		newStep("first command"),
+		newStep("second command"),
 	}}
 	if s.currentStep != 0 {
 		t.Fatalf("expected currentStep to be 0")
 	}
-	s, cmd = s.Update(startMsg{id: 1})
-	_, _ = cmd().(tickMsg)
-	if s.currentStep != 1 {
-		t.Fatalf("expected currentStep to be 1")
+	if s.steps[s.currentStep].state != Pending {
+		t.Fatalf("expected step to have state pending")
 	}
+
+	s, cmd = s.Update(startMsg{id: 0})
+	if s.steps[s.currentStep].state != Started {
+		t.Fatalf("expected step to have state started")
+	}
+
+	tick := cmd().(tea.BatchMsg)[0]
+	_ = tick().(tickMsg)
+	exit := cmd().(tea.BatchMsg)[1]
+	_ = exit().(exitMsg)
 }
 
 func TestUpdateTickMsgUpdatesCounter(t *testing.T) {
 	s := Steps{steps: []Step{
-		{command: "first command"},
+		newStep("first command"),
 	}}
 	times := rand.Intn(1000000)
 	for i := 0; i < times; i++ {

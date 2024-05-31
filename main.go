@@ -23,9 +23,9 @@ func main() {
 			content: "hello",
 			steps: Steps{
 				steps: []Step{
-					{command: "go mod tidy"},
-					{command: "go test -v ./..."},
-					{command: "go build"},
+					newStep("sleep 2"),
+					newStep("go test -v ./..."),
+					newStep("go build"),
 				},
 			},
 		},
