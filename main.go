@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/charmbracelet/bubbles/viewport"
@@ -9,30 +8,15 @@ import (
 )
 
 func main() {
-	logfilePath := os.Getenv("DEBUG")
-	if logfilePath != "" {
-		if _, err := tea.LogToFile("debug.log", "debug"); err != nil {
-			log.Fatal(err)
-		}
+	if os.Getenv("DEBUG") != "" {
+		tea.LogToFile("debug.log", "debug")
 	}
 
-	p := tea.NewProgram(
-		model{
-			content: "hello",
-			steps: Steps{
-				steps: []Step{
-					newStep("sleep 2"),
-					newStep("go test -v ./..."),
-					newStep("go build"),
-				},
-			},
-		},
+	tea.NewProgram(
+		initialModel(),
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
-	)
-	if _, err := p.Run(); err != nil {
-		log.Fatal(err)
-	}
+	).Run()
 }
 
 type model struct {
@@ -40,6 +24,19 @@ type model struct {
 	ready    bool
 	viewport viewport.Model
 	steps    Steps
+}
+
+func initialModel() model {
+	return model{
+		content: "",
+		steps: Steps{
+			steps: []Step{
+				newStep("sleep 2"),
+				newStep("go test -v ./..."),
+				newStep("go build"),
+			},
+		},
+	}
 }
 
 func (m model) Init() tea.Cmd {
