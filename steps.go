@@ -47,12 +47,7 @@ const (
 	Skipped State = "🙈"
 )
 
-func tick(immediately ...bool) tea.Cmd {
-	if len(immediately) > 0 {
-		return func() tea.Msg {
-			return tickMsg{}
-		}
-	}
+func tick() tea.Cmd {
 	return tea.Tick(time.Millisecond*100, func(t time.Time) tea.Msg {
 		return tickMsg{}
 	})
@@ -136,6 +131,7 @@ func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) {
 		k := msg.String()
 		if k == "r" {
 			m, cmd = m.reset()
+
 			return m, cmd
 		}
 	}
