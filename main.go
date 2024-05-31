@@ -56,9 +56,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		if msg.String() == "q" {
+		k := msg.String()
+		if k == "q" {
 			return m, tea.Quit
 		}
+
 	case tea.WindowSizeMsg:
 		if !m.ready {
 			m.viewport = viewport.New(msg.Width, msg.Height)

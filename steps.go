@@ -79,6 +79,15 @@ func (m Steps) start(index int) tea.Cmd {
 	}
 }
 
+func (m Steps) reset() (Steps, tea.Cmd) {
+	for i := range m.steps {
+		m.currentStep = 0
+		m.steps[i].state = Pending
+		m.steps[i].duration = time.Second * 0
+	}
+	return m, m.Init()
+}
+
 func (m Steps) Init() tea.Cmd {
 	return func() tea.Msg {
 		return startMsg{id: 0}
@@ -86,6 +95,8 @@ func (m Steps) Init() tea.Cmd {
 }
 
 func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tickMsg:
 		if m.steps[m.currentStep].state == Started {
@@ -120,6 +131,12 @@ func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) {
 				return startMsg{id: m.currentStep}
 			}
 			return m, tea.Batch(tick(), start)
+		}
+	case tea.KeyMsg:
+		k := msg.String()
+		if k == "r" {
+			m, cmd = m.reset()
+			return m, cmd
 		}
 	}
 
