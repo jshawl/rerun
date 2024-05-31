@@ -21,6 +21,7 @@ func main() {
 	p := tea.NewProgram(
 		model{
 			content: "hello",
+			steps:   Steps{},
 		},
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
@@ -34,6 +35,7 @@ type model struct {
 	content  string
 	ready    bool
 	viewport viewport.Model
+	steps    Steps
 }
 
 func (m model) Init() tea.Cmd {
@@ -45,8 +47,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd  tea.Cmd
 		cmds []tea.Cmd
 	)
-	m.viewport, cmd = m.viewport.Update(msg)
-	cmds = append(cmds, cmd)
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if msg.String() == "q" {
@@ -55,7 +56,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		if !m.ready {
 			m.viewport = viewport.New(msg.Width, msg.Height)
-			m.viewport.SetContent(m.content)
 			m.viewport.YPosition = 0
 			m.ready = true
 		} else {
@@ -63,6 +63,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.Height = msg.Height
 		}
 	}
+
+	m.viewport, cmd = m.viewport.Update(msg)
+	m.viewport.SetContent(m.steps.View())
+	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
 }
