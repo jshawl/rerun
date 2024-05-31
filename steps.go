@@ -129,6 +129,7 @@ func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) {
 func (m Steps) ViewOne(index int) string {
 	var (
 		space   string
+		lastly  string
 		content strings.Builder
 	)
 
@@ -140,7 +141,11 @@ func (m Steps) ViewOne(index int) string {
 		Foreground(lipgloss.Color("#666")).BorderForeground(lipgloss.Color("#aaa"))
 
 	command := fmt.Sprintf("%s %s", step.state, step.command)
-	lastly := step.duration.Round(time.Millisecond).String()
+	if step.state == Skipped {
+		lastly = "(skipped)"
+	} else {
+		lastly = step.duration.Round(time.Millisecond).String()
+	}
 
 	if m.viewportWidth > 0 {
 		space = strings.Repeat(" ", m.viewportWidth-lipgloss.Width(command)-lipgloss.Width(lastly)-6)

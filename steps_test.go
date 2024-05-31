@@ -74,5 +74,4 @@ func TestUpdateExitMsg(t *testing.T) {
 	exit := cmd().(tea.BatchMsg)[1]
 	// starts the next one
 	_ = exit().(startMsg)
-
 }
