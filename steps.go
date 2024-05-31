@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -46,17 +45,18 @@ func (m Steps) start(index int) tea.Cmd {
 }
 
 func (m Steps) Init() tea.Cmd {
-	return tea.Batch(tick(true), m.start(0))
+	return m.start(0)
 }
 
 func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tickMsg:
-		log.Println("update currentstep", m.currentStep)
+		// log.Println("update currentstep", m.currentStep)
 		m.steps[m.currentStep].counter++
 		return m, tick()
 	case startMsg:
 		m.currentStep = msg.id
+		return m, tick()
 	}
 	return m, nil
 }
