@@ -13,7 +13,7 @@ import (
 func main() {
 	logfilePath := os.Getenv("DEBUG")
 	if logfilePath != "" {
-		if _, err := tea.LogToFile(logfilePath, "debug"); err != nil {
+		if _, err := tea.LogToFile("debug.log", "debug"); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -21,7 +21,13 @@ func main() {
 	p := tea.NewProgram(
 		model{
 			content: "hello",
-			steps:   Steps{},
+			steps: Steps{
+				steps: []Step{
+					{command: "go mod tidy"},
+					{command: "go test -v ./..."},
+					{command: "go build"},
+				},
+			},
 		},
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
@@ -39,7 +45,7 @@ type model struct {
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return m.steps.Init()
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -62,10 +68,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.Width = msg.Width
 			m.viewport.Height = msg.Height
 		}
+		m.steps.viewportWidth = msg.Width
 	}
 
 	m.viewport, cmd = m.viewport.Update(msg)
 	m.viewport.SetContent(m.steps.View())
+	cmds = append(cmds, cmd)
+
+	m.steps, cmd = m.steps.Update(msg)
 	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
