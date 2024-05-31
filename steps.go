@@ -48,15 +48,18 @@ const (
 )
 
 func tick() tea.Cmd {
-	return tea.Tick(time.Millisecond*100, func(t time.Time) tea.Msg {
+	return tea.Tick(time.Millisecond*100, func(_ time.Time) tea.Msg {
 		return tickMsg{}
 	})
 }
 
 func newStep(command string) Step {
 	return Step{
-		command: command,
-		state:   Pending,
+		command:   command,
+		duration:  0,
+		output:    "",
+		startedAt: time.Now(),
+		state:     Pending,
 	}
 }
 
@@ -80,6 +83,7 @@ func (m Steps) reset() (Steps, tea.Cmd) {
 		m.steps[i].state = Pending
 		m.steps[i].duration = time.Second * 0
 	}
+
 	return m, m.Init()
 }
 
@@ -125,6 +129,7 @@ func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) {
 			start := func() tea.Msg {
 				return startMsg{id: m.currentStep}
 			}
+
 			return m, tea.Batch(tick(), start)
 		}
 	case tea.KeyMsg:
@@ -154,6 +159,7 @@ func (m Steps) ViewOne(index int) string {
 		Foreground(lipgloss.Color("#666")).BorderForeground(lipgloss.Color("#aaa"))
 
 	command := fmt.Sprintf("%s %s", step.state, step.command)
+
 	if step.state == Skipped {
 		lastly = "(skipped)"
 	} else {
@@ -165,11 +171,14 @@ func (m Steps) ViewOne(index int) string {
 	} else {
 		space = ""
 	}
+
 	content.WriteString(lipgloss.JoinHorizontal(lipgloss.Center, command, space, lastly))
+
 	if step.state == Exited1 {
 		content.WriteString("\n")
 		content.WriteString(strings.TrimSpace(step.output))
 	}
+
 	return style.Render(content.String())
 }
 
@@ -178,5 +187,6 @@ func (m Steps) View() string {
 	for index := range m.steps {
 		content.WriteString(m.ViewOne(index) + "\n")
 	}
+
 	return content.String()
 }

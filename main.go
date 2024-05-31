@@ -9,10 +9,10 @@ import (
 
 func main() {
 	if os.Getenv("DEBUG") != "" {
-		tea.LogToFile("debug.log", "debug")
+		_, _ = tea.LogToFile("debug.log", "debug")
 	}
 
-	tea.NewProgram(
+	_, _ = tea.NewProgram(
 		initialModel(),
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
@@ -28,10 +28,14 @@ type model struct {
 
 func initialModel() model {
 	return model{
-		content: "",
+		content:  "",
+		ready:    false,
+		viewport: viewport.New(0, 0),
 		steps: Steps{
+			viewportWidth: 0,
+			currentStep:   0,
 			steps: []Step{
-				newStep("sleep 2"),
+				newStep("golangci-lint run"),
 				newStep("go test -v ./..."),
 				newStep("go build"),
 			},
@@ -65,13 +69,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.Width = msg.Width
 			m.viewport.Height = msg.Height
 		}
+
 		m.steps.viewportWidth = msg.Width
 	}
 
 	m.viewport, cmd = m.viewport.Update(msg)
-	m.viewport.SetContent(m.steps.View())
 	cmds = append(cmds, cmd)
 
+	m.viewport.SetContent(m.steps.View())
 	m.steps, cmd = m.steps.Update(msg)
 	cmds = append(cmds, cmd)
 
