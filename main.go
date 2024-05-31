@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -18,8 +19,11 @@ func main() {
 	}
 
 	p := tea.NewProgram(
-		model{},
+		model{
+			content: "hello",
+		},
 		tea.WithAltScreen(),
+		tea.WithMouseCellMotion(),
 	)
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
@@ -27,6 +31,9 @@ func main() {
 }
 
 type model struct {
+	content  string
+	ready    bool
+	viewport viewport.Model
 }
 
 func (m model) Init() tea.Cmd {
@@ -34,14 +41,32 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg.(type) {
+	var (
+		cmd  tea.Cmd
+		cmds []tea.Cmd
+	)
+	m.viewport, cmd = m.viewport.Update(msg)
+	cmds = append(cmds, cmd)
+	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		return m, tea.Quit
-	default:
-		return m, nil
+		if msg.String() == "q" {
+			return m, tea.Quit
+		}
+	case tea.WindowSizeMsg:
+		if !m.ready {
+			m.viewport = viewport.New(msg.Width, msg.Height)
+			m.viewport.SetContent(m.content)
+			m.viewport.YPosition = 0
+			m.ready = true
+		} else {
+			m.viewport.Width = msg.Width
+			m.viewport.Height = msg.Height
+		}
 	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m model) View() string {
-	return "hey"
+	return m.viewport.View()
 }
