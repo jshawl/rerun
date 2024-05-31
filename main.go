@@ -27,18 +27,19 @@ type model struct {
 }
 
 func initialModel() model {
+	var steps []Step //nolint:prealloc
+	for _, command := range parseConfig()["steps"] {
+		steps = append(steps, newStep(command))
+	}
+
 	return model{
 		content:  "",
 		ready:    false,
 		viewport: viewport.New(0, 0),
 		steps: Steps{
-			viewportWidth: 0,
 			currentStep:   0,
-			steps: []Step{
-				newStep("golangci-lint run"),
-				newStep("go test -v ./..."),
-				newStep("go build"),
-			},
+			steps:         steps,
+			viewportWidth: 0,
 		},
 	}
 }
