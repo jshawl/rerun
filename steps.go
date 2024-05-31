@@ -32,10 +32,9 @@ type startMsg struct {
 }
 
 type exitMsg struct {
-	id       int
-	duration time.Duration
-	state    State
-	output   string
+	id     int
+	state  State
+	output string
 }
 
 type State string
@@ -82,10 +81,9 @@ func (m Steps) start(index int) (Steps, tea.Cmd) {
 		}
 
 		return exitMsg{
-			id:       index,
-			state:    m.steps[index].state,
-			output:   string(output),
-			duration: m.steps[index].duration,
+			id:     index,
+			state:  m.steps[index].state,
+			output: string(output),
 		}
 	}
 }
