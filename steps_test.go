@@ -72,5 +72,7 @@ func TestUpdateExitMsg(t *testing.T) {
 	tick := cmd().(tea.BatchMsg)[0]
 	_ = tick().(tickMsg)
 	exit := cmd().(tea.BatchMsg)[1]
-	_ = exit().(exitMsg)
+	// starts the next one
+	_ = exit().(startMsg)
+
 }

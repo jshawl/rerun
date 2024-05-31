@@ -65,11 +65,8 @@ func newStep(command string) Step {
 	}
 }
 
-func (m Steps) start(index int) (Steps, tea.Cmd) {
-	m.steps[index].state = Started
-	m.steps[index].startedAt = time.Now()
-
-	return m, func() tea.Msg {
+func (m Steps) start(index int) tea.Cmd {
+	return func() tea.Msg {
 		command := strings.Split(m.steps[index].command, " ")
 		cmd := exec.Command(command[0], command[1:]...) //nolint:gosec
 		output, err := cmd.Output()
@@ -97,7 +94,9 @@ func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) {
 			return m, tick()
 		}
 	case startMsg:
-		m, cmd := m.start(msg.id)
+		m.steps[msg.id].state = Started
+		m.steps[msg.id].startedAt = time.Now()
+		cmd := m.start(msg.id)
 
 		return m, tea.Batch(tick(), cmd)
 	case exitMsg:
@@ -113,11 +112,14 @@ func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) {
 		} else {
 			m.steps[m.currentStep].state = Exited0
 		}
+
 		if m.currentStep < len(m.steps)-1 {
 			m.steps[m.currentStep].output = msg.output
 			m.currentStep++
-			m, cmd := m.start(m.currentStep)
-			return m, tea.Batch(tick(), cmd)
+			start := func() tea.Msg {
+				return startMsg{id: m.currentStep}
+			}
+			return m, tea.Batch(tick(), start)
 		}
 	}
 
