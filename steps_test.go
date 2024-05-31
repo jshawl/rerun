@@ -7,51 +7,79 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+func setup(cmds ...Step) Steps {
+	return Steps{
+		currentStep:   0,
+		steps:         cmds,
+		viewportWidth: 0,
+	}
+}
+
 func TestInitReturnsStart(t *testing.T) {
-	s := Steps{steps: []Step{
-		newStep("first command"),
-	}}
+	t.Parallel()
+
+	s := setup(newStep("first command"))
+
 	cmd := s.Init()
 	start := cmd()
-	if start.(startMsg).id != 0 {
+
+	msg, ok := start.(startMsg)
+	if !ok {
+		t.Fatalf("expect msg to be a startMsg")
+	}
+
+	if msg.id != 0 {
 		t.Fatalf("expected startMsg{id: 0}")
 	}
 }
 
 func TestUpdateStartMsg(t *testing.T) {
 	var cmd tea.Cmd
-	s := Steps{steps: []Step{
+
+	t.Parallel()
+
+	steps := setup(
 		newStep("first command"),
 		newStep("second command"),
-	}}
-	if s.currentStep != 0 {
+	)
+	if steps.currentStep != 0 {
 		t.Fatalf("expected currentStep to be 0")
 	}
-	if s.steps[s.currentStep].state != Pending {
+
+	if steps.steps[steps.currentStep].state != Pending {
 		t.Fatalf("expected step to have state pending")
 	}
 
-	s, cmd = s.Update(startMsg{id: 0})
-	if s.steps[s.currentStep].state != Started {
+	steps, cmd = steps.Update(startMsg{id: 0})
+	if steps.steps[steps.currentStep].state != Started {
 		t.Fatalf("expected step to have state started")
 	}
 
-	tick := cmd().(tea.BatchMsg)[0]
-	_ = tick().(tickMsg)
-	exit := cmd().(tea.BatchMsg)[1]
-	_ = exit().(exitMsg)
+	tick := cmd().(tea.BatchMsg)[0] //nolint:forcetypeassert
+	_ = tick().(tickMsg)            //nolint:forcetypeassert
+	exit := cmd().(tea.BatchMsg)[1] //nolint:forcetypeassert
+	_ = exit().(exitMsg)            //nolint:forcetypeassert
 }
 
 func TestUpdateTickMsgReturnsTickOnlyIfStarted(t *testing.T) {
 	var cmd tea.Cmd
-	s := Steps{steps: []Step{
+
+	t.Parallel()
+
+	steps := setup(
 		newStep("first command"),
-	}}
-	s.steps[0].state = Started
-	s, cmd = s.Update(tickMsg{})
-	_ = cmd().(tickMsg)
-	s.steps[0].state = Exited0
-	s, cmd = s.Update(tickMsg{})
+	)
+	steps.steps[0].state = Started
+	steps, cmd = steps.Update(tickMsg{})
+
+	_, ok := cmd().(tickMsg)
+	if !ok {
+		t.Fatalf("expected cmd to be a tickMsg")
+	}
+
+	steps.steps[0].state = Exited0
+
+	_, cmd = steps.Update(tickMsg{})
 	if cmd != nil {
 		t.Fatalf("Expected ticking to stop after Exited0")
 	}
@@ -59,72 +87,99 @@ func TestUpdateTickMsgReturnsTickOnlyIfStarted(t *testing.T) {
 
 func TestUpdateExitMsg(t *testing.T) {
 	var cmd tea.Cmd
-	s := Steps{steps: []Step{
+
+	t.Parallel()
+
+	steps := setup(
 		newStep("first command"),
 		newStep("second command"),
-	}}
-	if s.currentStep != 0 {
+	)
+	if steps.currentStep != 0 {
 		t.Fatalf("expected currentStep to be 0")
 	}
-	s, cmd = s.Update(exitMsg{id: 0})
-	if s.currentStep != 1 {
+
+	steps, cmd = steps.Update(exitMsg{
+		id:     0,
+		output: "",
+		err:    nil,
+	})
+	if steps.currentStep != 1 {
 		t.Fatalf("expected currentStep to be 1")
 	}
-	tick := cmd().(tea.BatchMsg)[0]
-	_ = tick().(tickMsg)
-	exit := cmd().(tea.BatchMsg)[1]
+
+	tick := cmd().(tea.BatchMsg)[0] //nolint:forcetypeassert
+	_ = tick().(tickMsg)            //nolint:forcetypeassert
+	exit := cmd().(tea.BatchMsg)[1] //nolint:forcetypeassert
 	// starts the next one
-	_ = exit().(startMsg)
+	_ = exit().(startMsg) //nolint:forcetypeassert
 }
 
 func TestUpdateExitMsgErr(t *testing.T) {
+	t.Parallel()
 
-	s := Steps{steps: []Step{
+	steps := setup(
 		newStep("first command"),
 		newStep("second command"),
-	}}
-	s, _ = s.Update(exitMsg{id: 0, err: errors.New("yikes!")})
+	)
+	steps, _ = steps.Update(exitMsg{
+		id:     0,
+		output: "",
+		err:    errors.New("an error occurred"), //nolint:err113
+	})
 
-	if s.steps[0].state != Exited1 {
+	if steps.steps[0].state != Exited1 {
 		t.Fatalf("Expected exitMsg to update state to Exited 1")
 	}
 
-	if s.steps[1].state != Skipped {
+	if steps.steps[1].state != Skipped {
 		t.Fatalf("Expected remaining steps to be skipped")
 	}
 }
 
 func TestReset(t *testing.T) {
-	s := Steps{steps: []Step{
+	t.Parallel()
+
+	steps := setup(
 		newStep("first command"),
-	}}
-	s.steps[0].state = Skipped
-	s.reset()
-	if s.steps[0].state != Pending {
+	)
+	steps.steps[0].state = Skipped
+	steps.reset()
+
+	if steps.steps[0].state != Pending {
 		t.Fatalf("Expected reset to change state to Pending")
 	}
 }
 
 func TestKeyMsgR(t *testing.T) {
-	s := Steps{steps: []Step{
+	t.Parallel()
+
+	steps := setup(
 		newStep("first command"),
-	}}
-	s.steps[0].state = Exited1
-	k := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("r")}
-	s, _ = s.Update(k)
-	if s.steps[0].state != Pending {
+	)
+	steps.steps[0].state = Exited1
+	keyMsg := tea.KeyMsg{
+		Alt:   false,
+		Paste: false,
+		Type:  tea.KeyRunes,
+		Runes: []rune("r"),
+	}
+
+	steps, _ = steps.Update(keyMsg)
+	if steps.steps[0].state != Pending {
 		t.Fatalf("Expected 'r' keypress to reset")
 	}
 }
 
 func TestView(t *testing.T) {
-	s := Steps{steps: []Step{
+	t.Parallel()
+
+	steps := setup(
 		newStep("first command"),
 		newStep("second command"),
-	}}
-	s.steps[0].state = Exited1
-	s.steps[1].state = Skipped
-	s.View()
-	s.viewportWidth = 100
-	s.View()
+	)
+	steps.steps[0].state = Exited1
+	steps.steps[1].state = Skipped
+	steps.View()
+	steps.viewportWidth = 100
+	steps.View()
 }

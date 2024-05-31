@@ -3,4 +3,6 @@ linters:
   disable:
     - depguard
     - gofumpt
+    - gomnd
+    - mnd
     - ireturn
