@@ -55,3 +55,22 @@ func TestUpdateTickMsgReturnsTickOnlyIfStarted(t *testing.T) {
 		t.Fatalf("Expected ticking to stop after Exited0")
 	}
 }
+
+func TestUpdateExitMsg(t *testing.T) {
+	var cmd tea.Cmd
+	s := Steps{steps: []Step{
+		newStep("first command"),
+		newStep("second command"),
+	}}
+	if s.currentStep != 0 {
+		t.Fatalf("expected currentStep to be 0")
+	}
+	s, cmd = s.Update(exitMsg{id: 0})
+	if s.currentStep != 1 {
+		t.Fatalf("expected currentStep to be 1")
+	}
+	tick := cmd().(tea.BatchMsg)[0]
+	_ = tick().(tickMsg)
+	exit := cmd().(tea.BatchMsg)[1]
+	_ = exit().(exitMsg)
+}
