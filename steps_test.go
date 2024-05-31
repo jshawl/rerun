@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math/rand"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -42,15 +41,17 @@ func TestUpdateStartMsg(t *testing.T) {
 	_ = exit().(exitMsg)
 }
 
-func TestUpdateTickMsgUpdatesCounter(t *testing.T) {
+func TestUpdateTickMsgReturnsTickOnlyIfStarted(t *testing.T) {
+	var cmd tea.Cmd
 	s := Steps{steps: []Step{
 		newStep("first command"),
 	}}
-	times := rand.Intn(1000000)
-	for i := 0; i < times; i++ {
-		s, _ = s.Update(tickMsg{})
-	}
-	if s.steps[0].counter != times {
-		t.Fatalf("expected current step counter to increase %d", times)
+	s.steps[0].state = Started
+	s, cmd = s.Update(tickMsg{})
+	_ = cmd().(tickMsg)
+	s.steps[0].state = Exited0
+	s, cmd = s.Update(tickMsg{})
+	if cmd != nil {
+		t.Fatalf("Expected ticking to stop after Exited0")
 	}
 }
