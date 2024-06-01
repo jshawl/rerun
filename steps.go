@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os/exec"
 	"strings"
 	"time"
@@ -32,7 +33,6 @@ type startMsg struct {
 }
 
 type exitMsg struct {
-	id     int
 	output string
 	err    error
 }
@@ -65,12 +65,15 @@ func newStep(command string) Step {
 
 func (m Steps) start(index int) tea.Cmd {
 	return func() tea.Msg {
-		command := strings.Split(m.steps[index].command, " ")
-		cmd := exec.Command(command[0], command[1:]...) //nolint:gosec
+		cmd := exec.Command("bash", "-c", m.steps[index].command) //nolint:gosec
+
 		output, err := cmd.Output()
 
+		if err != nil {
+			log.Println("caught", err)
+		}
+
 		return exitMsg{
-			id:     index,
 			output: string(output),
 			err:    err,
 		}
@@ -93,7 +96,7 @@ func (m Steps) Init() tea.Cmd {
 	}
 }
 
-func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) {
+func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) { //nolint:cyclop
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -112,7 +115,12 @@ func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) {
 	case exitMsg:
 		if msg.err != nil {
 			m.steps[m.currentStep].state = Exited1
+
 			m.steps[m.currentStep].output = msg.output
+
+			if len(msg.output) == 0 {
+				m.steps[m.currentStep].output = msg.err.Error()
+			}
 
 			for i := m.currentStep + 1; i < len(m.steps); i++ {
 				m.steps[i].state = Skipped
