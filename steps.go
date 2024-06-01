@@ -33,7 +33,6 @@ type startMsg struct {
 }
 
 type exitMsg struct {
-	id     int
 	output string
 	err    error
 }
@@ -66,8 +65,7 @@ func newStep(command string) Step {
 
 func (m Steps) start(index int) tea.Cmd {
 	return func() tea.Msg {
-		command := strings.Split(m.steps[index].command, " ")
-		cmd := exec.Command(command[0], command[1:]...) //nolint:gosec
+		cmd := exec.Command("bash", "-c", m.steps[index].command) //nolint:gosec
 
 		output, err := cmd.Output()
 
@@ -76,7 +74,6 @@ func (m Steps) start(index int) tea.Cmd {
 		}
 
 		return exitMsg{
-			id:     index,
 			output: string(output),
 			err:    err,
 		}

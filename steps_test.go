@@ -102,7 +102,6 @@ func TestUpdateExitMsg(t *testing.T) {
 	}
 
 	steps, cmd = steps.Update(exitMsg{
-		id:     0,
 		output: "",
 		err:    nil,
 	})
@@ -123,7 +122,6 @@ func TestUpdateExitMsgErr(t *testing.T) {
 		newStep("second command"),
 	)
 	steps, _ = steps.Update(exitMsg{
-		id:     0,
 		output: "",
 		err:    errors.New("an error occurred"), //nolint:err113
 	})
@@ -141,7 +139,6 @@ func TestUpdateExitMsgErr(t *testing.T) {
 	}
 
 	steps, _ = steps.Update(exitMsg{
-		id:     0,
 		output: "display the output instead of the error",
 		err:    errors.New("an error occurred"), //nolint:err113
 	})
