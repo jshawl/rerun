@@ -15,18 +15,26 @@ func setup(cmds ...Step) Steps {
 	}
 }
 
+func assertMsgType[T interface{}](t *testing.T, cmd tea.Cmd) T {
+	t.Helper()
+
+	msg := cmd()
+	typed, ok := msg.(T)
+
+	if !ok {
+		t.Fatalf("Expected msg to be of type %T, got %T", *new(T), msg)
+	}
+
+	return typed
+}
+
 func TestInitReturnsStart(t *testing.T) {
 	t.Parallel()
 
 	s := setup(newStep("first command"))
 
 	cmd := s.Init()
-	start := cmd()
-
-	msg, ok := start.(startMsg)
-	if !ok {
-		t.Fatalf("expect msg to be a startMsg")
-	}
+	msg := assertMsgType[startMsg](t, cmd)
 
 	if msg.id != 0 {
 		t.Fatalf("expected startMsg{id: 0}")
@@ -55,10 +63,9 @@ func TestUpdateStartMsg(t *testing.T) {
 		t.Fatalf("expected step to have state started")
 	}
 
-	tick := cmd().(tea.BatchMsg)[0] //nolint:forcetypeassert
-	_ = tick().(tickMsg)            //nolint:forcetypeassert
-	exit := cmd().(tea.BatchMsg)[1] //nolint:forcetypeassert
-	_ = exit().(exitMsg)            //nolint:forcetypeassert
+	msgs := assertMsgType[tea.BatchMsg](t, cmd)
+	assertMsgType[tickMsg](t, msgs[0])
+	assertMsgType[exitMsg](t, msgs[1])
 }
 
 func TestUpdateTickMsgReturnsTickOnlyIfStarted(t *testing.T) {
@@ -71,11 +78,7 @@ func TestUpdateTickMsgReturnsTickOnlyIfStarted(t *testing.T) {
 	)
 	steps.steps[0].state = Started
 	steps, cmd = steps.Update(tickMsg{})
-
-	_, ok := cmd().(tickMsg)
-	if !ok {
-		t.Fatalf("expected cmd to be a tickMsg")
-	}
+	assertMsgType[tickMsg](t, cmd)
 
 	steps.steps[0].state = Exited0
 
@@ -107,11 +110,9 @@ func TestUpdateExitMsg(t *testing.T) {
 		t.Fatalf("expected currentStep to be 1")
 	}
 
-	tick := cmd().(tea.BatchMsg)[0] //nolint:forcetypeassert
-	_ = tick().(tickMsg)            //nolint:forcetypeassert
-	exit := cmd().(tea.BatchMsg)[1] //nolint:forcetypeassert
-	// starts the next one
-	_ = exit().(startMsg) //nolint:forcetypeassert
+	msgs := assertMsgType[tea.BatchMsg](t, cmd)
+	assertMsgType[tickMsg](t, msgs[0])
+	assertMsgType[startMsg](t, msgs[1])
 }
 
 func TestUpdateExitMsgErr(t *testing.T) {
