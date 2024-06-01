@@ -135,6 +135,20 @@ func TestUpdateExitMsgErr(t *testing.T) {
 	if steps.steps[1].state != Skipped {
 		t.Fatalf("Expected remaining steps to be skipped")
 	}
+
+	if steps.steps[0].output != "an error occurred" {
+		t.Fatalf("Expected error message to be in output")
+	}
+
+	steps, _ = steps.Update(exitMsg{
+		id:     0,
+		output: "display the output instead of the error",
+		err:    errors.New("an error occurred"), //nolint:err113
+	})
+
+	if steps.steps[0].output != "display the output instead of the error" {
+		t.Fatalf("Expected error output to be in output")
+	}
 }
 
 func TestReset(t *testing.T) {
