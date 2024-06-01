@@ -21,11 +21,7 @@ func TestInit(t *testing.T) {
 
 	m := initialModel()
 	cmd := m.Init()
-	msg, ok := cmd().(startMsg)
-
-	if !ok {
-		t.Fatalf("expected msg to be a startMsg")
-	}
+	msg := assertMsgType[startMsg](t, cmd)
 
 	if msg.id != 0 {
 		t.Fatalf("Expected init to send startMsg with id 0")
@@ -45,11 +41,7 @@ func TestUpdateKeyMsgQuit(t *testing.T) {
 		Runes: []rune("q"),
 	}
 	_, cmd = model.Update(keyMsg)
-	_, ok := cmd().(tea.QuitMsg)
-
-	if !ok {
-		t.Fatalf("expected msg to be a tea.QuitMsg")
-	}
+	assertMsgType[tea.QuitMsg](t, cmd)
 }
 
 func TestUpdateWindowSizeMsg(t *testing.T) {
