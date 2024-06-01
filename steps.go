@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os/exec"
 	"strings"
 	"time"
@@ -68,10 +67,6 @@ func (m Steps) start(index int) tea.Cmd {
 		cmd := exec.Command("bash", "-c", m.steps[index].command) //nolint:gosec
 
 		output, err := cmd.Output()
-
-		if err != nil {
-			log.Println("caught", err)
-		}
 
 		return exitMsg{
 			output: string(output),
