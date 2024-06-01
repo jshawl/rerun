@@ -97,7 +97,7 @@ func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) { //nolint:cyclop
 	switch msg := msg.(type) {
 	case tickMsg:
 		if m.steps[m.currentStep].state == Started {
-			m.steps[m.currentStep].duration = time.Since(m.steps[m.currentStep].startedAt).Round(time.Millisecond)
+			m.steps[m.currentStep].duration = time.Since(m.steps[m.currentStep].startedAt)
 
 			return m, tick()
 		}
@@ -147,6 +147,18 @@ func (m Steps) Update(msg tea.Msg) (Steps, tea.Cmd) { //nolint:cyclop
 	return m, nil
 }
 
+func roundDuration(duration time.Duration) string {
+	if duration.Milliseconds() < 1000 {
+		return duration.Round(time.Millisecond).String()
+	}
+
+	if duration.Seconds() < 60 {
+		return fmt.Sprintf("%.3fs", duration.Seconds())
+	}
+
+	return duration.Round(time.Second).String()
+}
+
 func (m Steps) ViewOne(index int) string {
 	var (
 		space   string
@@ -166,7 +178,7 @@ func (m Steps) ViewOne(index int) string {
 	if step.state == Skipped {
 		lastly = "(skipped)"
 	} else {
-		lastly = step.duration.Round(time.Millisecond).String()
+		lastly = roundDuration(step.duration)
 	}
 
 	if m.viewportWidth > 0 {
