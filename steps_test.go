@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -194,4 +195,24 @@ func TestView(t *testing.T) {
 	steps.View()
 	steps.viewportWidth = 100
 	steps.View()
+}
+
+func TestRoundDuration(t *testing.T) {
+	t.Parallel()
+
+	if roundDuration(time.Millisecond*900) != "900ms" {
+		t.Fatalf("Expected sub-second format to be milliseconds")
+	}
+
+	if roundDuration(time.Millisecond*1900) != "1.900s" {
+		t.Fatalf("Expected sub-minute format to include milliseconds")
+	}
+
+	if roundDuration(time.Millisecond*60900) != "1m1s" {
+		t.Fatalf("Expected > minute format to round to the second")
+	}
+
+	if roundDuration(time.Millisecond*60990) != "1m1s" {
+		t.Fatalf("Expected > minute format to round to the second")
+	}
 }
