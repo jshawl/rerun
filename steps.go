@@ -171,7 +171,8 @@ func (m Steps) ViewOne(index int) string {
 		Margin(0, 1).
 		Padding(0, 1).
 		Border(lipgloss.RoundedBorder()).
-		Foreground(lipgloss.Color("#666")).BorderForeground(lipgloss.Color("#aaa"))
+		Foreground(lipgloss.Color("#666")).BorderForeground(lipgloss.Color("#aaa")).
+		Width(m.viewportWidth - 4)
 
 	command := fmt.Sprintf("%s %s", step.state, step.command)
 
@@ -182,7 +183,7 @@ func (m Steps) ViewOne(index int) string {
 	}
 
 	if m.viewportWidth > 0 {
-		space = strings.Repeat(" ", m.viewportWidth-lipgloss.Width(command)-lipgloss.Width(lastly)-6)
+		space = strings.Repeat(" ", max(m.viewportWidth-lipgloss.Width(command)-lipgloss.Width(lastly)-6, 0))
 	} else {
 		space = ""
 	}
